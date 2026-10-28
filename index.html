@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111218" />
+  <meta name="description" content="ClipGenius organise, découpe et assemble tes vidéos avec IA directement dans le navigateur." />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="stylesheet" href="/src/style.css" />
+  <title>ClipGenius — Montage vidéo intelligent IA</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">✂</div>
+        <div>
+          <h1>ClipGenius <span class="ai-badge">AI 2.5</span></h1>
+          <p>Montage vidéo assisté par Gemini</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="apiKeyBtn" class="pill-btn" title="Configurer la clé API Gemini">
+          <span class="status-dot" id="apiStatusDot"></span>
+          <span id="apiKeyStatusText">Clé IA</span>
+        </button>
+        <button id="installBtn" class="ghost install-btn" hidden>Installer</button>
+      </div>
+    </header>
+
+    <!-- Modal Configuration Clé API Gemini -->
+    <dialog id="apiKeyModal" class="modal">
+      <div class="modal-card">
+        <h3>Configuration Gemini IA</h3>
+        <p class="modal-sub">Insère ta clé API Google Gemini pour activer l'analyse visuelle intelligente de tes vidéos.</p>
+        <label class="field-label" for="apiKeyInput">Clé API Google Gemini</label>
+        <input id="apiKeyInput" type="password" class="text-input" placeholder="AIzaSy..." autocomplete="off">
+        <p class="hint">Obtiens une clé gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>. La clé reste stockée localement dans ton navigateur.</p>
+        <div class="modal-actions">
+          <button id="clearApiKeyBtn" class="ghost">Effacer</button>
+          <button id="saveApiKeyBtn" class="primary">Enregistrer</button>
+        </div>
+      </div>
+    </dialog>
+
+    <main>
+      <section class="hero">
+        <span class="eyebrow">STUDIO VIDÉO MOBILE & LOCAL</span>
+        <h2>Des clips bruts.<br><em>Un montage sublimé par l'IA.</em></h2>
+        <p>Importe tes vidéos, analyse les scènes avec Gemini, réorganise intelligemment et exporte en MP4 fluide.</p>
+      </section>
+
+      <!-- ÉTAPE 01 -->
+      <section class="panel">
+        <div class="section-head">
+          <div><span class="step">01</span><h3>Importer les clips</h3></div>
+          <span id="clipCount" class="pill">0 clip</span>
+        </div>
+        <label for="fileInput" class="dropzone" id="dropArea">
+          <span class="upload-icon">＋</span>
+          <strong>Choisir des vidéos</strong>
+          <small>MP4, MOV, WebM (traitement 100% local)</small>
+        </label>
+        <input id="fileInput" type="file" accept="video/*" multiple hidden>
+        <p class="hint">Tes fichiers restent sur ton appareil. Aucun fichier vidéo n'est envoyé sur un serveur tiers.</p>
+      </section>
+
+      <!-- ÉTAPE 02 -->
+      <section class="panel">
+        <div class="section-head">
+          <div><span class="step">02</span><h3>Aperçu et découpe</h3></div>
+        </div>
+        <div class="video-container">
+          <video id="preview" controls playsinline></video>
+        </div>
+        <p id="selectedLabel" class="selected-label">Sélectionne un clip ci-dessous pour le prévisualiser.</p>
+        
+        <div class="range-grid">
+          <div>
+            <label for="startInput">Début (secondes)</label>
+            <div class="input-with-action">
+              <input id="startInput" type="number" min="0" step="0.1" value="0">
+              <button id="setStartBtn" class="quick-btn" title="Définir au curseur actuel">Curseur</button>
+            </div>
+          </div>
+          <div>
+            <label for="endInput">Fin (secondes)</label>
+            <div class="input-with-action">
+              <input id="endInput" type="number" min="0" step="0.1" value="0">
+              <button id="setEndBtn" class="quick-btn" title="Définir au curseur actuel">Curseur</button>
+            </div>
+          </div>
+        </div>
+        <button id="applyCut" class="primary full" disabled>Appliquer la découpe</button>
+        <p class="hint">La découpe modifie les points de montage sans altérer vos fichiers originaux.</p>
+      </section>
+
+      <!-- ÉTAPE 03 -->
+      <section class="panel">
+        <div class="section-head">
+          <div><span class="step">03</span><h3>Ordre & Scénario IA</h3></div>
+        </div>
+        
+        <div class="toolbar">
+          <button id="smartOrder" class="primary" disabled>✦ Analyser & Organiser (IA)</button>
+          <button id="shuffleBtn" class="ghost" disabled>Mélanger</button>
+        </div>
+
+        <label class="field-label" for="storyMode">Type de montage recherché</label>
+        <select id="storyMode" class="text-input">
+          <option value="story">Histoire / Vlog (intro, action, conclusion)</option>
+          <option value="tutorial">Tutoriel (séquences courtes puis détails)</option>
+          <option value="promo">Promotion & Réseaux (plans rythmés & dynamiques)</option>
+          <option value="cinematic">Cinématique (ambiance, contraste, rythme visuel)</option>
+        </select>
+
+        <p id="analysisStatus" class="analysis-status" role="status"></p>
+
+        <div id="aiSummaryBox" class="ai-summary-box" hidden>
+          <div class="ai-summary-header">
+            <span class="sparkle">✦</span> <strong>Scénario suggéré par l'IA :</strong>
+          </div>
+          <p id="aiSummaryText"></p>
+        </div>
+
+        <div id="clipList" class="clip-list">
+          <div class="empty">Tes clips apparaîtront ici.</div>
+        </div>
+      </section>
+
+      <!-- ÉTAPE 04 -->
+      <section class="panel">
+        <div class="section-head">
+          <div><span class="step">04</span><h3>Exporter le montage</h3></div>
+          <span class="pill">MP4</span>
+        </div>
+        <label class="field-label" for="projectName">Nom du fichier final</label>
+        <input id="projectName" class="text-input" value="clipgenius-montage" maxlength="60">
+
+        <button id="exportBtn" class="primary full export-button" disabled>
+          Assembler et exporter le MP4
+        </button>
+
+        <div id="progressWrap" class="progress-wrap" hidden>
+          <div class="progress-track">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+          <p id="status" role="status">Initialisation du moteur vidéo...</p>
+        </div>
+
+        <div id="exportResult" class="export-result" hidden>
+          <p class="success-msg">✓ Montage prêt !</p>
+          <video id="finalPreview" controls playsinline class="final-video-preview"></video>
+          <a id="downloadLink" class="download-link" download="montage.mp4">Télécharger la vidéo finale</a>
+        </div>
+
+        <p class="hint warning">L'export WebAssembly s'exécute directement sur votre appareil. Veillez à garder cet onglet ouvert durant le traitement.</p>
+      </section>
+
+      <footer>ClipGenius · Montage local & intelligent dans le navigateur</footer>
+    </main>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

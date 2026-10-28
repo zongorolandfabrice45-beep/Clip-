@@ -1,0 +1,16 @@
+{
+  "name": "ClipGenius",
+  "short_name": "ClipGenius",
+  "description": "Montage vidéo intelligent avec IA Gemini directement dans le navigateur",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111218",
+  "theme_color": "#111218",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
